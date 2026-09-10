@@ -88,76 +88,76 @@ const s = StyleSheet.create({
   orgBold:  { fontSize: 7.2, fontFamily: 'Helvetica-Bold', color: NAVY, marginTop: 0.5 },
 
   /* — Título — */
-  titleBlock: { alignItems: 'center', marginTop: 10 },
-  titleRule: { width: 64, height: 1.25, backgroundColor: NAVY, marginBottom: 7 },
-  title: { fontSize: 15, fontFamily: 'Helvetica-Bold', color: NAVY, textAlign: 'center' },
-  subtitle: { fontSize: 6.2, color: GRAYL, marginTop: 4, textAlign: 'center' },
+  titleBlock: { alignItems: 'center', marginTop: 15, marginBottom: 5 },
+  titleRule: { width: 80, height: 2, backgroundColor: NAVY, marginBottom: 8 },
+  title: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: NAVY, textAlign: 'center', letterSpacing: 1 },
+  subtitle: { fontSize: 6.5, color: GRAY, marginTop: 4, textAlign: 'center', letterSpacing: 0.5 },
 
   /* — Franja de datos del documento — */
   docStrip: {
-    flexDirection: 'row', marginTop: 13,
-    borderTopWidth: 1.25, borderTopColor: NAVY,
-    borderBottomWidth: 0.75, borderBottomColor: LINE,
+    flexDirection: 'row', marginTop: 15,
+    borderWidth: 1.5, borderColor: NAVY,
+    backgroundColor: SOFT,
   },
-  docCell: { flex: 1, paddingVertical: 5, paddingHorizontal: 8, borderRightWidth: 0.5, borderRightColor: LINE },
-  docCellLast: { borderRightWidth: 0 },
-  docLabel: { fontSize: 6, fontFamily: 'Helvetica-Bold', color: GRAYL, marginBottom: 1.5 },
-  docValue: { fontSize: 8.6, fontFamily: 'Helvetica-Bold', color: NAVY },
+  docCell: { flex: 1, paddingVertical: 6, paddingHorizontal: 8, borderRightWidth: 1, borderRightColor: LINE },
+  docCellLast: { flex: 1, paddingVertical: 6, paddingHorizontal: 8, borderRightWidth: 0 },
+  docLabel: { fontSize: 5.5, fontFamily: 'Helvetica-Bold', color: GRAY, marginBottom: 2, letterSpacing: 0.5 },
+  docValue: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: NAVY },
 
   /* — Secciones — */
-  section: { marginTop: 12 },
-  secHead: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1.25, borderBottomColor: NAVY, paddingBottom: 3.5 },
-  secNum: { backgroundColor: NAVY, width: 13, paddingTop: 1.5, paddingBottom: 1.5, marginRight: 7, alignItems: 'center' },
-  secNumTxt: { color: '#FFF', fontSize: 7.5, fontFamily: 'Helvetica-Bold' },
-  secTitle: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: NAVY },
-  secTag: { flex: 1, textAlign: 'right', fontSize: 6, color: GRAYL, fontFamily: 'Helvetica-Bold' },
+  section: { marginTop: 16 },
+  secHead: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1.5, borderBottomColor: NAVY, paddingBottom: 4 },
+  secNum: { backgroundColor: NAVY, width: 14, paddingTop: 2, paddingBottom: 2, marginRight: 8, alignItems: 'center' },
+  secNumTxt: { color: '#FFF', fontSize: 8, fontFamily: 'Helvetica-Bold' },
+  secTitle: { fontSize: 9.5, fontFamily: 'Helvetica-Bold', color: NAVY, letterSpacing: 0.5 },
+  secTag: { flex: 1, textAlign: 'right', fontSize: 6, color: GRAYL, fontFamily: 'Helvetica-Bold', letterSpacing: 0.5 },
 
   /* — Cuerpo tipo tabla — */
-  secBody: { borderWidth: 0.5, borderColor: LINE, borderTopWidth: 0 },
-  row:     { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: LINE },
+  secBody: { borderWidth: 1, borderColor: LINE, borderTopWidth: 0 },
+  row:     { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: LINE },
   rowLast: { flexDirection: 'row' },
-  cell:     { paddingVertical: 4, paddingHorizontal: 8, borderRightWidth: 0.5, borderRightColor: LINE },
-  cellLast: { paddingVertical: 4, paddingHorizontal: 8 },
-  label: { fontSize: 6.1, fontFamily: 'Helvetica-Bold', color: GRAY, marginBottom: 1 },
-  value: { fontSize: 8.4, color: INK },
+  cell:     { paddingVertical: 5, paddingHorizontal: 8, borderRightWidth: 1, borderRightColor: LINE },
+  cellLast: { paddingVertical: 5, paddingHorizontal: 8, flex: 1 },
+  label: { fontSize: 5.8, fontFamily: 'Helvetica-Bold', color: GRAY, marginBottom: 2, letterSpacing: 0.2 },
+  value: { fontSize: 8.5, color: INK, fontFamily: 'Helvetica' },
 
   /* — Mini tabla de construcciones — */
-  miniHead: { flexDirection: 'row', backgroundColor: SOFT, borderBottomWidth: 0.5, borderBottomColor: LINE, paddingVertical: 3.5, paddingHorizontal: 8 },
-  miniRow:  { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: LINE, paddingVertical: 3, paddingHorizontal: 8 },
-  mh:  { fontSize: 6.1, fontFamily: 'Helvetica-Bold', color: GRAY },
-  mc:  { fontSize: 7.6, color: INK },
+  miniHead: { flexDirection: 'row', backgroundColor: '#E8ECF1', borderBottomWidth: 1, borderBottomColor: LINE, paddingVertical: 4, paddingHorizontal: 8 },
+  miniRow:  { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: LINE, paddingVertical: 4, paddingHorizontal: 8 },
+  mh:  { fontSize: 6, fontFamily: 'Helvetica-Bold', color: NAVY, letterSpacing: 0.2 },
+  mc:  { fontSize: 7.8, color: INK },
   mhr: { textAlign: 'right' },
 
   /* — Tabla de valoración — */
-  valTable: { borderWidth: 0.5, borderColor: LINE, borderTopWidth: 0 },
-  vRowHead: { flexDirection: 'row', backgroundColor: SOFT, borderBottomWidth: 0.5, borderBottomColor: LINE, paddingVertical: 4, paddingHorizontal: 8 },
-  vRow:     { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: LINE, paddingVertical: 4, paddingHorizontal: 8 },
-  vTotal:   { flexDirection: 'row', backgroundColor: NAVY, paddingVertical: 6, paddingHorizontal: 8 },
-  vh:  { fontSize: 6.1, fontFamily: 'Helvetica-Bold', color: GRAY },
-  vc:  { fontSize: 8.2, color: INK },
-  vt:  { color: '#FFF', fontFamily: 'Helvetica-Bold', fontSize: 8 },
+  valTable: { borderWidth: 1, borderColor: LINE, borderTopWidth: 0 },
+  vRowHead: { flexDirection: 'row', backgroundColor: '#E8ECF1', borderBottomWidth: 1, borderBottomColor: LINE, paddingVertical: 5, paddingHorizontal: 8 },
+  vRow:     { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: LINE, paddingVertical: 5, paddingHorizontal: 8 },
+  vTotal:   { flexDirection: 'row', backgroundColor: NAVY, paddingVertical: 7, paddingHorizontal: 8 },
+  vh:  { fontSize: 6, fontFamily: 'Helvetica-Bold', color: NAVY, letterSpacing: 0.2 },
+  vc:  { fontSize: 8.5, color: INK },
+  vt:  { color: '#FFF', fontFamily: 'Helvetica-Bold', fontSize: 8.5, letterSpacing: 0.5 },
   vr:  { textAlign: 'right' },
-  alicRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-  alic: { fontSize: 7.4, color: GRAY },
+  alicRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
+  alic: { fontSize: 7.5, color: GRAY, fontFamily: 'Helvetica-Bold' },
 
   /* — Nota legal — */
-  note: { marginTop: 13, backgroundColor: SOFT, borderLeftWidth: 2, borderLeftColor: NAVY, paddingVertical: 6, paddingHorizontal: 10 },
-  noteTxt: { fontSize: 6.2, color: GRAY, textAlign: 'justify', lineHeight: 1.5 },
+  note: { marginTop: 18, backgroundColor: SOFT, borderLeftWidth: 3, borderLeftColor: NAVY, paddingVertical: 8, paddingHorizontal: 12 },
+  noteTxt: { fontSize: 6.5, color: INK, textAlign: 'justify', lineHeight: 1.6 },
 
   /* — Firmas — */
-  signatures: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 22 },
-  sigBlock: { width: '40%', alignItems: 'center' },
-  sigLine: { width: '100%', borderBottomWidth: 0.75, borderBottomColor: INK, marginTop: 20, marginBottom: 5 },
-  sigName: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: INK, textAlign: 'center' },
-  sigRole: { fontSize: 6.5, color: GRAY, marginTop: 1.5, textAlign: 'center' },
-  sigInst: { fontSize: 6, color: GRAYL, marginTop: 1, textAlign: 'center' },
+  signatures: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 30 },
+  sigBlock: { width: '42%', alignItems: 'center' },
+  sigLine: { width: '100%', borderBottomWidth: 1, borderBottomColor: NAVY, marginTop: 25, marginBottom: 6 },
+  sigName: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: NAVY, textAlign: 'center' },
+  sigRole: { fontSize: 6.5, color: GRAY, marginTop: 2, textAlign: 'center', fontFamily: 'Helvetica-Bold' },
+  sigInst: { fontSize: 6, color: GRAYL, marginTop: 1.5, textAlign: 'center' },
 
   /* — Pie fijo — */
-  footer: { position: 'absolute', bottom: 30, left: 46, right: 46, borderTopWidth: 0.75, borderTopColor: LINE, paddingTop: 7 },
+  footer: { position: 'absolute', bottom: 30, left: 46, right: 46, borderTopWidth: 1.5, borderTopColor: NAVY, paddingTop: 10 },
   footRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   footLeft: { flexDirection: 'row', alignItems: 'flex-end' },
-  footTxt: { fontSize: 5.8, color: GRAYL, lineHeight: 1.7 },
-  footPage: { fontSize: 6.2, fontFamily: 'Helvetica-Bold', color: GRAY },
+  footTxt: { fontSize: 6, color: GRAY, lineHeight: 1.8, fontFamily: 'Helvetica-Bold' },
+  footPage: { fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: NAVY, letterSpacing: 0.5 },
 });
 
 /* Campo reutilizable: etiqueta (gris, mayúsculas) + valor */
@@ -356,32 +356,12 @@ export default function FichaPDF({ inmueble, parametros, firmantes, logoUrl, qrD
           </View>
         </View>
 
-        {/* ══ 4 · INFORMACIÓN REGISTRAL ══ */}
+        {/* ══ 4 · VALORACIÓN ══ */}
         <View style={s.section}>
           <View style={s.secHead}>
             <View style={s.secNum}><Text style={s.secNumTxt}>4</Text></View>
-            <Text style={s.secTitle}>INFORMACIÓN JURÍDICA REGISTRAL</Text>
-            <Text style={s.secTag}>SEC/04</Text>
-          </View>
-          <View style={s.secBody}>
-            <View style={s.row}>
-              <F label="OFICINA DE REGISTRO" value="Registro Público — por actualizar (contribuyente)" flex={2} />
-              <F label="TOMO / VOLUMEN" value="S/D" last />
-            </View>
-            <View style={s.rowLast}>
-              <F label="N° DE DOCUMENTO" value="S/D" />
-              <F label="PROTOCOLO / TRIMESTRE" value="S/D" />
-              <F label="FECHA / AÑO DE REGISTRO" value="S/D" last />
-            </View>
-          </View>
-        </View>
-
-        {/* ══ 5 · VALORACIÓN ══ */}
-        <View style={s.section}>
-          <View style={s.secHead}>
-            <View style={s.secNum}><Text style={s.secNumTxt}>5</Text></View>
             <Text style={s.secTitle}>VALORACIÓN CATASTRAL Y TRIBUTO</Text>
-            <Text style={s.secTag}>SEC/05</Text>
+            <Text style={s.secTag}>SEC/04</Text>
           </View>
           <View style={s.valTable}>
             <View style={s.vRowHead}>
