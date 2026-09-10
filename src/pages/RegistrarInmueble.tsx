@@ -91,9 +91,10 @@ export default function RegistrarInmueble() {
 
   const handleGenerarCodigo = async () => {
     try {
-      const zona = getValues('zona') || '01'
-      const barrio = getValues('barrio') || '00'
-      const nuevoCodigo = await api.generarCodigoCatastral(zona.substring(0,2).toUpperCase(), barrio.substring(0,2).toUpperCase())
+      // Usamos el código de Estado (20 para Táchira) y Municipio (29 para Torbes)
+      // para generar un código catastral estandarizado y profesional,
+      // evitando que el texto ingresado por el usuario (ej. "Norte") corrompa el formato.
+      const nuevoCodigo = await api.generarCodigoCatastral('20', '29')
       setValue('codigo_catastral', nuevoCodigo, { shouldValidate: true })
       notify(`Código generado: ${nuevoCodigo}`, 'success')
     } catch (err: any) {
