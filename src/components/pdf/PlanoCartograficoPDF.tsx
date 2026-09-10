@@ -2,26 +2,6 @@ import { Document, Page, Text, View, StyleSheet, Svg, Polygon, Circle, Line, G, 
 import type { Inmueble } from '@/types'
 import { getVertices, resumenVertices, toUTM, toRumboTopografico, toDMS, centroide } from '@/lib/geo'
 
-// ─── Contorno REAL del Municipio Torbes (OpenStreetMap, simplificado a 62 pts) ───
-const TORBES_BOUNDARY: [number, number][] = [
-  [-72.248,7.6919],[-72.2443,7.6848],[-72.238,7.6773],[-72.23,7.6685],
-  [-72.2264,7.6607],[-72.2272,7.6484],[-72.2332,7.6354],[-72.2251,7.6314],
-  [-72.2155,7.6306],[-72.2102,7.6292],[-72.2037,7.6306],[-72.1968,7.6249],
-  [-72.1783,7.6213],[-72.1643,7.6146],[-72.1618,7.6177],[-72.1612,7.6233],
-  [-72.1588,7.6247],[-72.1567,7.625],[-72.1539,7.626],[-72.1516,7.627],
-  [-72.1514,7.6293],[-72.1482,7.6308],[-72.1457,7.6314],[-72.1422,7.6332],
-  [-72.1397,7.6331],[-72.1368,7.6325],[-72.1345,7.6316],[-72.1283,7.6315],
-  [-72.1255,7.631],[-72.1217,7.6319],[-72.118,7.6329],[-72.1135,7.6325],
-  [-72.1104,7.6298],[-72.0907,7.6334],[-72.0783,7.6389],[-72.0709,7.6492],
-  [-72.0738,7.663],[-72.0815,7.6773],[-72.0766,7.6898],[-72.098,7.6854],
-  [-72.1163,7.6795],[-72.12,7.6774],[-72.1232,7.675],[-72.1244,7.6723],
-  [-72.1251,7.6687],[-72.1261,7.6666],[-72.1348,7.6708],[-72.1385,7.6762],
-  [-72.1374,7.6831],[-72.1377,7.6888],[-72.1427,7.6884],[-72.1479,7.6842],
-  [-72.2147,7.6939],[-72.2312,7.7039],[-72.2335,7.7034],[-72.2368,7.7041],
-  [-72.2389,7.7052],[-72.2409,7.7046],[-72.2424,7.705],[-72.245,7.7052],
-  [-72.2474,7.7018],[-72.248,7.6921],
-]
-
 const s = StyleSheet.create({
   page: { padding: 15, backgroundColor: '#fff', fontFamily: 'Helvetica' },
   outerBorder: { border: '2pt solid #000', flex: 1, flexDirection: 'row' },
@@ -32,11 +12,11 @@ const s = StyleSheet.create({
   cLabel: { fontSize: 6, color: '#555', marginBottom: 1 },
   cVal: { fontSize: 8, fontWeight: 'bold' },
   cValSm: { fontSize: 7 },
-  vtxTable: { position: 'absolute', top: 8, left: 8 },
+  vtxTable: { position: 'absolute', top: 8, left: 8, zIndex: 10 },
   vtxRow: { flexDirection: 'row', borderBottom: '0.5pt solid #888' },
   vtxH: { fontSize: 5, fontWeight: 'bold', width: 40, paddingVertical: 1.5, paddingHorizontal: 2, borderRight: '0.5pt solid #888', textAlign: 'center', backgroundColor: '#f5f5f5' },
   vtxC: { fontSize: 4.5, width: 40, paddingVertical: 1.5, paddingHorizontal: 2, borderRight: '0.5pt solid #888', textAlign: 'right' },
-  geoTable: { position: 'absolute', bottom: 8, left: 8, right: 8 },
+  geoTable: { position: 'absolute', bottom: 8, left: 8, right: 8, zIndex: 10 },
   geoRow: { flexDirection: 'row', borderBottom: '0.5pt solid #aaa' },
   geoH: { fontSize: 4.5, fontWeight: 'bold', paddingVertical: 1, paddingHorizontal: 2, backgroundColor: '#eee', borderRight: '0.5pt solid #aaa', textAlign: 'center' },
   geoC: { fontSize: 4.5, paddingVertical: 1, paddingHorizontal: 2, borderRight: '0.5pt solid #aaa', textAlign: 'center' },
@@ -47,91 +27,61 @@ interface Props {
   vecinos?: Inmueble[]
 }
 
-function projectGeomToSvg(geom: GeoJSON.Polygon, svgW: number, svgH: number) {
-  const coords = geom.coordinates[0]
-  const lons = coords.map(c => c[0])
-  const lats = coords.map(c => c[1])
+// Proyección unificada que incluye al predio y a sus vecinos para dar contexto
+function projectAllToSvg(mainGeom: GeoJSON.Polygon, vecinos: Inmueble[] | undefined, svgW: number, svgH: number) {
+  const allCoords = [...mainGeom.coordinates[0]]
+  vecinos?.forEach(v => {
+    if (v.geom) allCoords.push(...v.geom.coordinates[0])
+  })
+
+  const lons = allCoords.map(c => c[0])
+  const lats = allCoords.map(c => c[1])
   const minLon = Math.min(...lons), maxLon = Math.max(...lons)
   const minLat = Math.min(...lats), maxLat = Math.max(...lats)
+  
   const lonR = (maxLon - minLon) || 0.001
   const latR = (maxLat - minLat) || 0.001
-  const pad = 0.45
-  const pMinLon = minLon - lonR * pad, pMaxLon = maxLon + lonR * pad
-  const pMinLat = minLat - latR * pad, pMaxLat = maxLat + latR * pad
-  const pLonR = pMaxLon - pMinLon, pLatR = pMaxLat - pMinLat
+  const pad = 0.15 // 15% de padding para que no quede pegado al borde
+  
+  const pMinLon = minLon - lonR * pad
+  const pMaxLon = maxLon + lonR * pad
+  const pMinLat = minLat - latR * pad
+  const pMaxLat = maxLat + latR * pad
+  const pLonR = pMaxLon - pMinLon
+  const pLatR = pMaxLat - pMinLat
+  
   const scale = Math.min(svgW / pLonR, svgH / pLatR)
   const offX = (svgW - pLonR * scale) / 2
   const offY = (svgH - pLatR * scale) / 2
+  
   const project = (lon: number, lat: number) => ({
     x: offX + (lon - pMinLon) * scale,
     y: offY + (pMaxLat - lat) * scale,
   })
-  return { projectedPoints: coords.map(c => project(c[0], c[1])), project }
+  
+  return { project, bounds: { minLon: pMinLon, maxLon: pMaxLon, minLat: pMinLat, maxLat: pMaxLat, scale } }
 }
 
-// Project Torbes boundary to SVG coords (independent, fills the background)
-function projectTorbesBoundary(svgW: number, svgH: number): string {
-  const lons = TORBES_BOUNDARY.map(c => c[0])
-  const lats = TORBES_BOUNDARY.map(c => c[1])
-  const minLon = Math.min(...lons), maxLon = Math.max(...lons)
-  const minLat = Math.min(...lats), maxLat = Math.max(...lats)
-  const lonR = maxLon - minLon, latR = maxLat - minLat
-  const pad = 0.08
-  const pMinLon = minLon - lonR * pad, pMaxLon = maxLon + lonR * pad
-  const pMinLat = minLat - latR * pad, pMaxLat = maxLat + latR * pad
-  const pLonR = pMaxLon - pMinLon, pLatR = pMaxLat - pMinLat
-  const scale = Math.min(svgW / pLonR, svgH / pLatR)
-  const offX = (svgW - pLonR * scale) / 2
-  const offY = (svgH - pLatR * scale) / 2
-  return TORBES_BOUNDARY.map(([lon, lat]) => {
-    const x = offX + (lon - pMinLon) * scale
-    const y = offY + (pMaxLat - lat) * scale
-    return `${x},${y}`
-  }).join(' ')
-}
-
-// Locate the main parcel's position on the Torbes watermark
-function projectParcelDotOnTorbes(lat: number, lon: number, svgW: number, svgH: number): { x: number; y: number } {
-  const lons = TORBES_BOUNDARY.map(c => c[0])
-  const lats = TORBES_BOUNDARY.map(c => c[1])
-  const minLon = Math.min(...lons), maxLon = Math.max(...lons)
-  const minLat = Math.min(...lats), maxLat = Math.max(...lats)
-  const lonR = maxLon - minLon, latR = maxLat - minLat
-  const pad = 0.08
-  const pMinLon = minLon - lonR * pad, pMaxLon = maxLon + lonR * pad
-  const pMinLat = minLat - latR * pad, pMaxLat = maxLat + latR * pad
-  const pLonR = pMaxLon - pMinLon, pLatR = pMaxLat - pMinLat
-  const scale = Math.min(svgW / pLonR, svgH / pLatR)
-  const offX = (svgW - pLonR * scale) / 2
-  const offY = (svgH - pLatR * scale) / 2
-  return {
-    x: offX + (lon - pMinLon) * scale,
-    y: offY + (pMaxLat - lat) * scale,
-  }
-}
-
-export default function PlanoCartograficoPDF({ inmueble }: Props) {
+export default function PlanoCartograficoPDF({ inmueble, vecinos = [] }: Props) {
   const dateStr = new Date().toLocaleDateString('es-VE')
   const svgW = 450, svgH = 350
 
-  const { projectedPoints, project } = projectGeomToSvg(inmueble.geom, svgW, svgH)
-  const polyStr = projectedPoints.map(p => `${p.x},${p.y}`).join(' ')
+  const { project, bounds } = projectAllToSvg(inmueble.geom, vecinos, svgW, svgH)
+  
+  const mainPolyStr = inmueble.geom.coordinates[0].map(c => {
+    const p = project(c[0], c[1])
+    return `${p.x},${p.y}`
+  }).join(' ')
+
   const vertices = getVertices(inmueble.geom)
   const resumen = resumenVertices(inmueble.geom)
   const utmVertices = vertices.map(v => ({ ...v, utm: toUTM(v.lat, v.lon) }))
   const area = inmueble.superficie_gis_m2 ?? inmueble.superficie_m2 ?? 0
-
   const [cLat, cLon] = centroide(inmueble.geom)
   const centerPt = project(cLon, cLat)
 
-  const colindantes = [
-    inmueble.norte ?? '',
-    inmueble.este ?? '',
-    inmueble.sur ?? '',
-    inmueble.oeste ?? '',
-  ]
-
-  const edges: { midX: number; midY: number; angle: number; dist: string; rumbo: string; colindante: string; p1: {x:number;y:number}; p2: {x:number;y:number} }[] = []
+  const colindantes = [inmueble.norte ?? '', inmueble.este ?? '', inmueble.sur ?? '', inmueble.oeste ?? '']
+  const edges: any[] = []
   for (let i = 0; i < vertices.length; i++) {
     const p1 = project(vertices[i].lon, vertices[i].lat)
     const next = vertices[(i + 1) % vertices.length]
@@ -141,30 +91,33 @@ export default function PlanoCartograficoPDF({ inmueble }: Props) {
     let angle = Math.atan2(dy, dx) * (180 / Math.PI)
     if (angle > 90 || angle < -90) angle += 180
     edges.push({
-      p1, p2,
-      midX: (p1.x + p2.x) / 2, midY: (p1.y + p2.y) / 2,
-      angle,
-      dist: r.distancia.toFixed(2),
-      rumbo: toRumboTopografico(r.azimut),
+      p1, p2, midX: (p1.x + p2.x) / 2, midY: (p1.y + p2.y) / 2,
+      angle, dist: r.distancia.toFixed(2), rumbo: toRumboTopografico(r.azimut),
       colindante: colindantes[i % colindantes.length],
     })
   }
 
-  // Torbes watermark — LARGE, fills the entire drawing background
-  const torbesPolyStr = projectTorbesBoundary(svgW, svgH)
-  const parcelDot = projectParcelDotOnTorbes(cLat, cLon, svgW, svgH)
+  // Generar Cuadrícula (Grid) estilo CAD - Muy suave y limpia
+  const gridLines = []
+  const gridStep = 20 // Cuadrícula más grande y limpia
+  for (let x = 0; x <= svgW; x += gridStep) {
+    gridLines.push(<Line key={`gx-${x}`} x1={x} y1={0} x2={x} y2={svgH} stroke="#f5f5f5" strokeWidth={0.5} />)
+  }
+  for (let y = 0; y <= svgH; y += gridStep) {
+    gridLines.push(<Line key={`gy-${y}`} x1={0} y1={y} x2={svgW} y2={y} stroke="#f5f5f5" strokeWidth={0.5} />)
+  }
 
   return (
     <Document>
       <Page size="A4" orientation="landscape" style={s.page}>
         <View style={s.outerBorder}>
 
-          {/* ═══ LEFT: DRAWING AREA ═══ */}
+          {/* ÁREA DE DIBUJO */}
           <View style={s.drawArea}>
-
-            {/* Vertex Table (top-left) */}
+            
+            {/* Tabla de Vértices */}
             <View style={s.vtxTable}>
-              <View style={{ border: '0.5pt solid #888' }}>
+              <View style={{ border: '0.5pt solid #888', backgroundColor: 'white' }}>
                 <View style={s.vtxRow}>
                   <Text style={s.vtxH}>EST.</Text>
                   <Text style={s.vtxH}>RUMBO</Text>
@@ -187,43 +140,35 @@ export default function PlanoCartograficoPDF({ inmueble }: Props) {
               </View>
             </View>
 
-            {/* Main SVG Canvas */}
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 55, paddingBottom: 55 }}>
-              <Svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`}>
+            {/* Lienzo SVG Principal */}
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 10 }}>
+              <Svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} style={{ border: '1pt solid #ddd', backgroundColor: '#ffffff' }}>
+                
+                {/* 1. Cuadrícula de fondo suave */}
+                {gridLines}
 
-                {/* ═══ TORBES WATERMARK (large background) ═══ */}
-                <Polygon points={torbesPolyStr} fill="#f8f8f8" stroke="#e0e0e0" strokeWidth={0.6} />
-                <Text x={svgW / 2} y={svgH / 2 + 60} fontSize={6} textAnchor="middle" fill="#e0e0e0">MUNICIPIO TORBES — SAN JOSECITO, EDO. TÁCHIRA</Text>
-                {/* Red dot showing parcel location on municipality */}
-                <Circle cx={parcelDot.x} cy={parcelDot.y} r={4} fill="#ef4444" stroke="#fff" strokeWidth={1} opacity={0.5} />
-
-                {/* Main Polygon (ON TOP of watermark) */}
-                <Polygon points={polyStr} fill="none" stroke="#000" strokeWidth={1.5} />
-
-                {/* Hash marks on edges */}
-                {edges.map((e, i) => {
-                  const dx = e.p2.x - e.p1.x, dy = e.p2.y - e.p1.y
-                  const len = Math.sqrt(dx * dx + dy * dy)
-                  if (len < 10) return null
-                  const nx = -dy / len * 4, ny = dx / len * 4
-                  const marks = []
-                  const numMarks = Math.min(Math.floor(len / 20), 8)
-                  for (let m = 1; m <= numMarks; m++) {
-                    const t = m / (numMarks + 1)
-                    const mx = e.p1.x + dx * t, my = e.p1.y + dy * t
-                    marks.push(<Line key={`hm-${i}-${m}`} x1={mx - nx} y1={my - ny} x2={mx + nx} y2={my + ny} stroke="#000" strokeWidth={0.5} />)
-                  }
-                  return <G key={`marks-${i}`}>{marks}</G>
+                {/* 2. VECINOS (Contexto de manzanas) en gris claro con línea punteada */}
+                {vecinos.map((vecino, i) => {
+                  if (!vecino.geom) return null
+                  const vStr = vecino.geom.coordinates[0].map(c => {
+                    const p = project(c[0], c[1])
+                    return `${p.x},${p.y}`
+                  }).join(' ')
+                  return <Polygon key={`vec-${i}`} points={vStr} fill="#f9f9f9" stroke="#cccccc" strokeWidth={0.8} strokeDasharray="2,2" />
                 })}
 
-                {/* Distance labels */}
+                {/* 3. Polígono Principal - SIN RELLENO NARANJA, borde negro grueso */}
+                <Polygon points={mainPolyStr} fill="rgba(30, 58, 138, 0.03)" stroke="#1A1A1A" strokeWidth={2} />
+
+                {/* 4. Etiquetas de distancias (con fondo blanco para no chocar con el grid) */}
                 {edges.map((e, i) => (
                   <G key={`dist-${i}`} transform={`translate(${e.midX}, ${e.midY}) rotate(${e.angle})`}>
-                    <Text x={0} y={-5} fontSize={6} textAnchor="middle" fill="#000">{e.dist} m</Text>
+                    <Rect x={-18} y={-6} width={36} height={9} fill="white" />
+                    <Text x={0} y={1} fontSize={6} textAnchor="middle" fill="#1A1A1A" fontWeight="bold">{e.dist} m</Text>
                   </G>
                 ))}
 
-                {/* Colindante names (offset outward) */}
+                {/* 5. Colindantes (Nombres de calles/vecinos) */}
                 {edges.map((e, i) => {
                   if (!e.colindante) return null
                   const dx = e.p2.x - e.p1.x, dy = e.p2.y - e.p1.y
@@ -231,67 +176,49 @@ export default function PlanoCartograficoPDF({ inmueble }: Props) {
                   const nx = -dy / len * 18, ny = dx / len * 18
                   return (
                     <G key={`col-${i}`} transform={`translate(${e.midX + nx}, ${e.midY + ny}) rotate(${e.angle})`}>
-                      <Text x={0} y={0} fontSize={6.5} textAnchor="middle" fill="#000" fontWeight="bold">
+                      <Text x={0} y={0} fontSize={6.5} textAnchor="middle" fill="#333333" fontWeight="bold">
                         {e.colindante.toUpperCase()}
                       </Text>
                     </G>
                   )
                 })}
 
-                {/* Vertex circles with labels */}
+                {/* 6. Vértices tipo CAD (Cruces negras) */}
                 {vertices.map((v, i) => {
                   const pt = project(v.lon, v.lat)
                   return (
                     <G key={`v-${i}`}>
-                      <Circle cx={pt.x} cy={pt.y} r={2.5} fill="#fff" stroke="#000" strokeWidth={1} />
-                      <Text x={pt.x + 5} y={pt.y - 5} fontSize={5.5} fill="#000" fontWeight="bold">E-{i + 1}</Text>
+                      <Line x1={pt.x - 4} y1={pt.y} x2={pt.x + 4} y2={pt.y} stroke="#1A1A1A" strokeWidth={1} />
+                      <Line x1={pt.x} y1={pt.y - 4} x2={pt.x} y2={pt.y + 4} stroke="#1A1A1A" strokeWidth={1} />
+                      <Circle cx={pt.x} cy={pt.y} r={1.5} fill="#1A1A1A" />
+                      <Text x={pt.x + 6} y={pt.y - 6} fontSize={6} fill="#1A1A1A" fontWeight="bold">E-{i + 1}</Text>
                     </G>
                   )
                 })}
 
-                {/* Center label */}
-                <Text x={centerPt.x} y={centerPt.y - 8} fontSize={8} textAnchor="middle" fill="#000" fontWeight="bold">
+                {/* 7. Texto Central (Azul Institucional) */}
+                <Text x={centerPt.x} y={centerPt.y - 10} fontSize={9} textAnchor="middle" fill="#1E3A8A" fontWeight="bold">
                   {inmueble.tipo_inmueble.toUpperCase()}
                 </Text>
-                <Text x={centerPt.x} y={centerPt.y + 2} fontSize={7} textAnchor="middle" fill="#000">
+                <Text x={centerPt.x} y={centerPt.y + 2} fontSize={8} textAnchor="middle" fill="#1A1A1A">
                   {area.toFixed(2)} m²
                 </Text>
-                <Text x={centerPt.x} y={centerPt.y + 12} fontSize={5} textAnchor="middle" fill="#555">
+                <Text x={centerPt.x} y={centerPt.y + 14} fontSize={6} textAnchor="middle" fill="#555555">
                   {inmueble.codigo_catastral}
                 </Text>
 
-                {/* Compass Rose (top-right) */}
-                <G transform={`translate(${svgW - 35}, 35)`}>
-                  <Circle cx={0} cy={0} r={16} fill="none" stroke="#000" strokeWidth={0.7} />
-                  <Circle cx={0} cy={0} r={13} fill="none" stroke="#000" strokeWidth={0.3} />
-                  <Line x1={0} y1={-16} x2={0} y2={16} stroke="#000" strokeWidth={0.4} />
-                  <Line x1={-16} y1={0} x2={16} y2={0} stroke="#000" strokeWidth={0.4} />
-                  <Line x1={-11} y1={-11} x2={11} y2={11} stroke="#000" strokeWidth={0.2} />
-                  <Line x1={11} y1={-11} x2={-11} y2={11} stroke="#000" strokeWidth={0.2} />
-                  <Path d="M0,-13 L-2.5,-4 L0,-6 L2.5,-4 Z" fill="#000" />
-                  <Text x={0} y={-19} fontSize={7} textAnchor="middle" fontWeight="bold">N</Text>
-                  <Text x={0} y={24} fontSize={5} textAnchor="middle">S</Text>
-                  <Text x={22} y={2} fontSize={5} textAnchor="middle">E</Text>
-                  <Text x={-22} y={2} fontSize={5} textAnchor="middle">W</Text>
-                </G>
-
-                {/* Graphic Scale */}
-                <G transform={`translate(30, ${svgH - 18})`}>
-                  <Text x={30} y={-6} fontSize={5} textAnchor="middle">ESCALA GRÁFICA</Text>
-                  <Rect x={0} y={0} width={20} height={3} fill="#000" stroke="#000" strokeWidth={0.5} />
-                  <Rect x={20} y={0} width={20} height={3} fill="#fff" stroke="#000" strokeWidth={0.5} />
-                  <Rect x={40} y={0} width={20} height={3} fill="#000" stroke="#000" strokeWidth={0.5} />
-                  <Text x={0} y={9} fontSize={4} textAnchor="middle">0</Text>
-                  <Text x={20} y={9} fontSize={4} textAnchor="middle">10</Text>
-                  <Text x={40} y={9} fontSize={4} textAnchor="middle">20</Text>
-                  <Text x={60} y={9} fontSize={4} textAnchor="middle">30 m</Text>
+                {/* 8. Rosa de los Vientos Limpia */}
+                <G transform={`translate(${svgW - 40}, 40)`}>
+                  <Circle cx={0} cy={0} r={18} fill="white" stroke="#1A1A1A" strokeWidth={1} />
+                  <Path d="M0,-15 L-3,-5 L0,-7 L3,-5 Z" fill="#1A1A1A" />
+                  <Text x={0} y={-21} fontSize={8} textAnchor="middle" fill="#1A1A1A" fontWeight="bold">N</Text>
                 </G>
               </Svg>
             </View>
 
-            {/* Geo Reference Table (bottom) */}
+            {/* Tabla Geo Referencial */}
             <View style={s.geoTable}>
-              <View style={{ border: '0.5pt solid #aaa', marginTop: 4 }}>
+              <View style={{ border: '0.5pt solid #aaa', marginTop: 4, backgroundColor: 'white' }}>
                 <View style={s.geoRow}>
                   <Text style={[s.geoH, { width: '20%' }]}>PUNTO</Text>
                   <Text style={[s.geoH, { width: '25%' }]}>LATITUD</Text>
@@ -312,7 +239,7 @@ export default function PlanoCartograficoPDF({ inmueble }: Props) {
             </View>
           </View>
 
-          {/* ═══ RIGHT: CAJETÍN ═══ */}
+          {/* CAJETÍN */}
           <View style={s.cajetin}>
             <View style={[s.cRow, { alignItems: 'center', paddingVertical: 7, borderBottom: '2pt solid #000' }]}>
               <Image src="/assets/logos/logo.png" style={{ width: 35, height: 35, marginBottom: 3 }} />

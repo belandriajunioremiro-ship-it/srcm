@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Download, MapPin, User, FileText, Building2, Ruler, AlertCircle, Check, Clock, Compass, Calendar, Hash, MapPinned } from 'lucide-react'
 import { Icon } from '@iconify/react'
-import * as turf from '@turf/turf' // Importación de Turf.js para el filtro geoespacial
+import * as turf from '@turf/turf'
+import QRCode from 'qrcode'
 import { api } from '@/lib/api'
 import { centroide, formatCoord, formatDMS, getVertices, resumenVertices } from '@/lib/geo'
 import { pdf } from '@react-pdf/renderer'
@@ -58,7 +59,17 @@ export default function FichaCatastral() {
     if (!inmueble) return
     setDownloading(true)
     try {
-      const blob = await pdf(<FichaPDF inmueble={inmueble} parametros={parametros} />).toBlob()
+      // Generar QR Code con datos de verificación
+      const qrPayload = `CEDULA-CATASTRAL|${inmueble.codigo_catastral}|EXP-${new Date().getFullYear()}-${inmueble.codigo_catastral.split('-').pop()}|${new Date().toISOString().split('T')[0]}`
+      const qrDataUrl = await QRCode.toDataURL(qrPayload, {
+        width: 120,
+        margin: 1,
+        color: { dark: '#13233C', light: '#ffffff' }
+      })
+
+      const blob = await pdf(
+        <FichaPDF inmueble={inmueble} parametros={parametros} qrDataUrl={qrDataUrl} />
+      ).toBlob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url

@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Save, MapPin, User as UserIcon, FileText, Check, LocateFixed, Crosshair, Navigation, Ruler, Compass, MapPinned, Hash, Building2, Map, Phone, Mail, IdCard, Users, Plus, Trash2, Camera, Upload, Home, Layers, Calendar, Wrench, Wand2 } from 'lucide-react'
+import { Save, MapPin, User as UserIcon, FileText, Check, LocateFixed, Crosshair, Navigation, Ruler, Compass, MapPinned, Hash, Building2, Map, Phone, Mail, IdCard, Users, Plus, Trash2, Camera, Upload, Home, Layers, Calendar, Wrench, Wand2, Search, MapPinCheck } from 'lucide-react'
 import { useNotifications } from 'reapop'
 import DibujarPoligono from '@/components/map/DibujarPoligono'
 import { api } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import { useOnlineStatus } from '@/hooks/useOnline'
 import { useGeolocation } from '@/hooks/useGeolocation'
-import { superficieM2Preview, perimetroMPreview, calcularLinderos, formatCoord, formatDMS, getVertices, resumenVertices } from '@/lib/geo'
+import { superficieM2Preview, perimetroMPreview, calcularLinderos, centroide, formatCoord, formatDMS, getVertices, resumenVertices } from '@/lib/geo'
+import { reverseGeocode, getCallesAdyacentes, getBBox } from '@/lib/nominatim'
 import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import Textarea from '@/components/ui/Textarea'
@@ -69,6 +70,8 @@ export default function RegistrarInmueble() {
   const [autoLinderos, setAutoLinderos] = useState(true)
   const [showCoordPanel, setShowCoordPanel] = useState(true)
   const [fotosFiles, setFotosFiles] = useState<File[]>([])
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'buscando' | 'listo' | 'error'>('idle')
+  const [callesDetectadas, setCallesDetectadas] = useState<string[]>([])
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -91,9 +94,6 @@ export default function RegistrarInmueble() {
 
   const handleGenerarCodigo = async () => {
     try {
-      // Usamos el código de Estado (20 para Táchira) y Municipio (29 para Torbes)
-      // para generar un código catastral estandarizado y profesional,
-      // evitando que el texto ingresado por el usuario (ej. "Norte") corrompa el formato.
       const nuevoCodigo = await api.generarCodigoCatastral('20', '29')
       setValue('codigo_catastral', nuevoCodigo, { shouldValidate: true })
       notify(`Código generado: ${nuevoCodigo}`, 'success')
@@ -113,19 +113,99 @@ export default function RegistrarInmueble() {
     }
   }, [geo.error, notify])
 
+  // ═══ EFECTO PRINCIPAL: Al cerrar el polígono ═══
+  // 1. Calcula área y linderos base (coordenadas)
+  // 2. Llama a Nominatim para auto-rellenar dirección/barrio/zona
+  // 3. Llama a Overpass para obtener calles adyacentes y mejorar linderos
   useEffect(() => {
-    if (geom && geom.coordinates.length > 0 && autoLinderos) {
-      const linderos = calcularLinderos(geom)
-      setValue('norte', linderos.norte)
-      setValue('sur', linderos.sur)
-      setValue('este', linderos.este)
-      setValue('oeste', linderos.oeste)
-      
-      // Auto-completar la superficie declarada con el Área GIS
-      const areaGis = superficieM2Preview(geom)
-      setValue('superficie_m2', Number(areaGis.toFixed(2)), { shouldValidate: true })
+    if (!geom || geom.coordinates.length === 0) return
+
+    // Siempre auto-completar superficie
+    const areaGis = superficieM2Preview(geom)
+    setValue('superficie_m2', Number(areaGis.toFixed(2)), { shouldValidate: true })
+
+    if (!autoLinderos) return
+
+    // Linderos base con coordenadas
+    const linderos = calcularLinderos(geom)
+    setValue('norte', linderos.norte)
+    setValue('sur', linderos.sur)
+    setValue('este', linderos.este)
+    setValue('oeste', linderos.oeste)
+
+    // Geocodificación inversa + calles adyacentes (async, no bloquea)
+    const fetchGeoData = async () => {
+      setGeoStatus('buscando')
+      try {
+        const [cLat, cLon] = centroide(geom)
+        const bbox = getBBox(geom)
+
+        // Lanzar ambas consultas en paralelo
+        const [ubicacion, calles] = await Promise.all([
+          reverseGeocode(cLat, cLon),
+          getCallesAdyacentes(bbox.minLat, bbox.minLon, bbox.maxLat, bbox.maxLon)
+        ])
+
+        // Auto-rellenar campos SOLO si están vacíos (no sobreescribir lo que el usuario ya puso)
+        if (ubicacion) {
+          const current = getValues()
+          if (!current.direccion && ubicacion.calle) {
+            setValue('direccion', ubicacion.calle)
+          }
+          if (!current.barrio && ubicacion.barrio) {
+            setValue('barrio', ubicacion.barrio)
+          }
+          if (!current.zona && ubicacion.zona) {
+            setValue('zona', ubicacion.zona)
+          }
+        }
+
+        // Mejorar linderos con nombres de calles detectadas
+        if (calles.length > 0) {
+          setCallesDetectadas(calles)
+
+          // Asignar calles a los linderos según orientación del polígono
+          const vertices = getVertices(geom)
+          if (vertices.length >= 3) {
+            // Encontrar los segmentos extremos (más al norte, sur, este, oeste)
+            let norteIdx = 0, surIdx = 0, esteIdx = 0, oesteIdx = 0
+            let maxLat = -Infinity, minLat = Infinity, maxLon = -Infinity, minLon = -Infinity
+
+            for (let i = 0; i < vertices.length; i++) {
+              const next = vertices[(i + 1) % vertices.length]
+              const midLat = (vertices[i].lat + next.lat) / 2
+              const midLon = (vertices[i].lon + next.lon) / 2
+              if (midLat > maxLat) { maxLat = midLat; norteIdx = i % calles.length }
+              if (midLat < minLat) { minLat = midLat; surIdx = i % calles.length }
+              if (midLon > maxLon) { maxLon = midLon; esteIdx = i % calles.length }
+              if (midLon < minLon) { minLon = midLon; oesteIdx = i % calles.length }
+            }
+
+            // Construir linderos con nombre de calle + coordenadas
+            const formatLindero = (calleIdx: number, coordStr: string) => {
+              const calle = calles[calleIdx % calles.length]
+              return calle ? `${calle}; ${coordStr}` : coordStr
+            }
+
+            setValue('norte', formatLindero(norteIdx, linderos.norte))
+            setValue('sur', formatLindero(surIdx, linderos.sur))
+            setValue('este', formatLindero(esteIdx, linderos.este))
+            setValue('oeste', formatLindero(oesteIdx, linderos.oeste))
+          }
+        }
+
+        setGeoStatus('listo')
+        if (calles.length > 0) {
+          notify(`${calles.length} calle(s) detectadas cerca del predio`, 'success')
+        }
+      } catch (err) {
+        console.warn('Error en geocodificación:', err)
+        setGeoStatus('error')
+      }
     }
-  }, [geom, autoLinderos, setValue])
+
+    fetchGeoData()
+  }, [geom, autoLinderos, setValue, getValues, notify])
 
   const handleGeo = () => geo.requestPosition()
   const handleWatch = () => geo.watching ? geo.stopWatching() : geo.startWatching()
@@ -319,6 +399,31 @@ export default function RegistrarInmueble() {
                 <div className="bg-background-light border border-gray-100 rounded-lg px-2 py-2 text-center md:text-left"><p className="text-[10px] text-institutional-slate">Área GIS</p><p className="font-bold text-text-main text-xs">{superficieM2Preview(geom).toFixed(2)} m²</p></div>
                 <div className="bg-background-light border border-gray-100 rounded-lg px-2 py-2 text-center md:text-left"><p className="text-[10px] text-institutional-slate">Perímetro GIS</p><p className="font-bold text-text-main text-xs">{perimetroMPreview(geom).toFixed(2)} m</p></div>
                 <div className="bg-background-light border border-gray-100 rounded-lg px-2 py-2 text-center md:text-left"><p className="text-[10px] text-institutional-slate">Vértices</p><p className="font-bold text-text-main text-xs">{vertices.length}</p></div>
+              </div>
+            )}
+
+            {/* Badge de estado de geocodificación */}
+            {geoStatus !== 'idle' && (
+              <div className={`mt-2 flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${
+                geoStatus === 'buscando' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                geoStatus === 'listo' ? 'bg-green-50 text-green-700 border border-green-200' :
+                'bg-orange-50 text-orange-700 border border-orange-200'
+              }`}>
+                {geoStatus === 'buscando' && <><Search className="w-3.5 h-3.5 animate-pulse" /> Buscando calles cercanas en OpenStreetMap...</>}
+                {geoStatus === 'listo' && <><MapPinCheck className="w-3.5 h-3.5" /> {callesDetectadas.length > 0 ? `${callesDetectadas.length} calle(s) detectadas` : 'Geocodificación completada'}</>}
+                {geoStatus === 'error' && <><MapPin className="w-3.5 h-3.5" /> Sin datos de calles (sin conexión o zona no mapeada)</>}
+              </div>
+            )}
+
+            {/* Calles detectadas */}
+            {callesDetectadas.length > 0 && (
+              <div className="mt-2 bg-background-light border border-gray-100 rounded-lg p-3">
+                <p className="text-[10px] text-institutional-slate font-semibold mb-1.5 uppercase tracking-wider">Calles adyacentes detectadas (OpenStreetMap)</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {callesDetectadas.map((calle, i) => (
+                    <span key={i} className="bg-white border border-gray-200 text-xs text-text-charcoal px-2 py-0.5 rounded-md">{calle}</span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
