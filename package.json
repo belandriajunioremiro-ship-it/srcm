@@ -17,6 +17,7 @@
     "@react-pdf/renderer": "^4.9.0",
     "@supabase/supabase-js": "^2.57.4",
     "@turf/turf": "^7.4.0",
+    "buffer": "^6.0.3",
     "dexie": "^4.4.5",
     "file-saver": "^2.0.5",
     "leaflet": "^1.9.4",
