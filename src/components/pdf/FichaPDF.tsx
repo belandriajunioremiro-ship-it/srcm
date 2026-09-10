@@ -53,26 +53,26 @@ const s = StyleSheet.create({
   
   /* TÍTULO DEL DOCUMENTO */
   titleContainer: { alignItems: 'center', marginVertical: 15 },
-  titleBox: { backgroundColor: NAVY, paddingVertical: 6, paddingHorizontal: 40, borderRadius: 2 },
-  title: { color: '#FFFFFF', fontSize: 14, fontFamily: 'Helvetica-Bold', letterSpacing: 3 },
+  titleBox: { paddingVertical: 6, paddingHorizontal: 40 },
+  title: { color: NAVY, fontSize: 16, fontFamily: 'Helvetica-Bold', letterSpacing: 3, textDecoration: 'underline' },
   subtitle: { fontSize: 6.5, color: GRAY, marginTop: 4, letterSpacing: 1 },
-  
+
   /* BLOQUES / SECCIONES */
   section: { marginBottom: 15, border: `1pt solid ${NAVY}` },
   secHeader: { backgroundColor: SOFT, padding: 5, borderBottom: `1pt solid ${NAVY}` },
   secTitle: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: NAVY, letterSpacing: 1 },
-  
+
   /* FILAS Y CELDAS */
   row: { flexDirection: 'row', borderBottom: `0.5pt solid ${BORDER}` },
   rowLast: { flexDirection: 'row' },
   cell: { flex: 1, padding: 5, borderRight: `0.5pt solid ${BORDER}` },
   cellLast: { flex: 1, padding: 5 },
   cell2x: { flex: 2, padding: 5, borderRight: `0.5pt solid ${BORDER}` },
-  
+
   lbl: { fontSize: 5.5, fontFamily: 'Helvetica-Bold', color: GRAY, marginBottom: 2 },
   val: { fontSize: 8.5, color: INK },
   valCode: { fontSize: 11, fontFamily: 'Helvetica-Bold', color: NAVY }, // Destaca el código catastral
-  
+
   /* AVALÚO */
   vRowH: { flexDirection: 'row', backgroundColor: SOFT, borderBottom: `0.5pt solid ${BORDER}`, padding: 4 },
   vRow: { flexDirection: 'row', borderBottom: `0.5pt solid ${BORDER}`, padding: 5 },
@@ -84,10 +84,10 @@ const s = StyleSheet.create({
   alicuotaBox: { flexDirection: 'row', justifyContent: 'space-between', padding: 5, backgroundColor: '#F8FAFC' },
   alicTxt: { fontSize: 7, color: GRAY },
   alicVal: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: NAVY },
-  
+
   /* NOTA LEGAL */
-  nota: { marginTop: 10, padding: 8, backgroundColor: SOFT, borderLeft: `2pt solid ${NAVY}` },
-  notaTxt: { fontSize: 6.5, color: GRAY, textAlign: 'justify', lineHeight: 1.5 },
+  nota: { marginTop: 15, paddingHorizontal: 5 },
+  notaTxt: { fontSize: 6.5, color: INK, textAlign: 'justify', lineHeight: 1.5 },
   
   /* FIRMA (SOLO DIRECTOR) */
   firmaContainer: { marginTop: 45, alignItems: 'center' },
