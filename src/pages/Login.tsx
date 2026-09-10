@@ -87,8 +87,8 @@ export default function Login() {
           className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: 'url("/assets/images/imagenlogin.png")' }}
         >
-          <div className="absolute inset-0 bg-institutional-navy/50 mix-blend-multiply" />
-          <div className="absolute inset-0 bg-gradient-to-r from-institutional-navy/90 to-transparent" />
+          {/* Sombra oscura a la izquierda solo para que el texto blanco sea legible, sin pintar la imagen de azul */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent" />
         </div>
         <div className="relative z-10 p-12 flex flex-col h-full text-white w-full">
           {/* Logo anclado arriba */}
