@@ -149,8 +149,8 @@ export default function FichaPDF({ inmueble, parametros, firmantes, logoUrl, qrD
               <View style={s.headerText}>
                 <Text style={s.rep}>REPÚBLICA BOLIVARIANA DE VENEZUELA</Text>
                 <Text style={s.est}>ESTADO TÁCHIRA — MUNICIPIO TORBES</Text>
-                <Text style={s.est}>ALCALDÍA DEL MUNICIPIO TORBES</Text>
-                <Text style={s.dir}>DIRECCIÓN DE CATASTRO Y CONTROL URBANO</Text>
+                <Text style={s.est}>Sistema de Registro Catastral Municipal (SRMC)</Text>
+                <Text style={s.dir}>DIVISIÓN DE CATASTRO</Text>
               </View>
               <View style={s.qrBox}>
                 {qrDataUrl && <Image src={qrDataUrl} style={s.qrImg} />}
@@ -160,7 +160,6 @@ export default function FichaPDF({ inmueble, parametros, firmantes, logoUrl, qrD
             {/* TÍTULO */}
             <View style={s.titleContainer}>
               <View style={s.titleBox}><Text style={s.title}>CÉDULA CATASTRAL</Text></View>
-              <Text style={s.subtitle}>DOCUMENTO TÉCNICO-FISCAL · LEY DE GEOGRAFÍA Y CATASTRO NACIONAL</Text>
             </View>
 
             {/* DATOS DEL EXPEDIENTE */}
@@ -253,16 +252,15 @@ export default function FichaPDF({ inmueble, parametros, firmantes, logoUrl, qrD
             {/* FIRMA ÚNICA */}
             <View style={s.firmaContainer}>
               <View style={s.firmaLine} />
-              <Text style={s.firmaNombre}>{firmantes?.director || 'Director(a) de Catastro'}</Text>
-              <Text style={s.firmaCargo}>DIRECTOR(A) DE CATASTRO Y CONTROL URBANO</Text>
-              <Text style={s.firmaInst}>ALCALDÍA DEL MUNICIPIO TORBES</Text>
+              <Text style={s.firmaNombre}>{firmantes?.director || 'Jefe de Catastro'}</Text>
+              <Text style={s.firmaCargo}>JEFATURA DE LA DIVISIÓN DE CATASTRO</Text>
+              <Text style={s.firmaInst}>Sistema de Registro Catastral Municipal (SRMC)</Text>
             </View>
 
             {/* FOOTER */}
             <View style={s.footer} fixed>
               <View>
-                <Text style={s.fTxt}>CÓDIGO VERIFICACIÓN: <Text style={s.fBold}>{verif}</Text></Text>
-                <Text style={s.fTxt}>VALIDACIÓN WEB: catastro.torbes.gob.ve</Text>
+                {/* Textos removidos a petición */}
               </View>
               <Text style={s.fPage} render={({ pageNumber }) => `PÁGINA ${pageNumber}`} />
             </View>

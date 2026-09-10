@@ -59,17 +59,24 @@ export default function FichaCatastral() {
     if (!inmueble) return
     setDownloading(true)
     try {
-      // Generar QR Code con datos de verificación
-      const qrPayload = `CEDULA-CATASTRAL|${inmueble.codigo_catastral}|EXP-${new Date().getFullYear()}-${inmueble.codigo_catastral.split('-').pop()}|${new Date().toISOString().split('T')[0]}`
+      const prop = inmueble.propietarios?.[0] || { nombre: 'NO REGISTRADO', apellido: '', cedula: 'N/D' }
+      const nombreFull = `${prop.nombre || ''} ${prop.apellido || ''}`.trim() || 'NO REGISTRADO'
+      
+      // El QR solo llevará: Código Catastral, Nombre del propietario y Cédula
+      const qrPayload = `${inmueble.codigo_catastral} - ${nombreFull} - ${prop.cedula}`
       const qrDataUrl = await QRCode.toDataURL(qrPayload, {
         width: 120,
         margin: 1,
-        color: { dark: '#13233C', light: '#ffffff' }
+        color: { dark: '#0F172A', light: '#ffffff' }
       })
 
+      // Ruta absoluta al logo para que react-pdf pueda cargarlo correctamente
+      const logoUrl = window.location.origin + '/assets/logos/logo.png'
+
       const blob = await pdf(
-        <FichaPDF inmueble={inmueble} parametros={parametros} qrDataUrl={qrDataUrl} />
+        <FichaPDF inmueble={inmueble} parametros={parametros} qrDataUrl={qrDataUrl} logoUrl={logoUrl} />
       ).toBlob()
+      
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
