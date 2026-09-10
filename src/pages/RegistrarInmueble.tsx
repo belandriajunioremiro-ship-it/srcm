@@ -105,6 +105,13 @@ export default function RegistrarInmueble() {
     if (geo.position) setMapCenter(geo.position)
   }, [geo.position])
 
+  // Mostrar errores de GPS con notificaciones
+  useEffect(() => {
+    if (geo.error) {
+      notify(geo.error, 'error')
+    }
+  }, [geo.error, notify])
+
   useEffect(() => {
     if (geom && geom.coordinates.length > 0 && autoLinderos) {
       const linderos = calcularLinderos(geom)
