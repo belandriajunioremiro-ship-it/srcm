@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Download, MapPin, User, FileText, Building2, Ruler, AlertCircle, Check, Clock, Compass, Calendar, Hash, MapPinned } from 'lucide-react'
 import { Icon } from '@iconify/react'
+import * as turf from '@turf/turf' // Importación de Turf.js para el filtro geoespacial
 import { api } from '@/lib/api'
 import { centroide, formatCoord, formatDMS, getVertices, resumenVertices } from '@/lib/geo'
 import { pdf } from '@react-pdf/renderer'
@@ -30,6 +31,7 @@ export default function FichaCatastral() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [inmueble, setInmueble] = useState<Inmueble | null>(null)
+  const [parametros, setParametros] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [downloading, setDownloading] = useState(false)
   const [downloadingPlano, setDownloadingPlano] = useState(false)
@@ -38,29 +40,33 @@ export default function FichaCatastral() {
     (async () => {
       if (!id) return
       try {
-        const data = await api.getInmueble(id)
+        const [data, paramsData] = await Promise.all([
+          api.getInmueble(id),
+          api.getParametros().catch(() => null)
+        ])
         setInmueble(data)
+        setParametros(paramsData)
       } catch (err) {
-        console.error('Error fetching inmueble:', err)
+        console.error('Error fetching data:', err)
       } finally {
         setLoading(false)
       }
     })()
   }, [id])
 
-  const handleDownload = async () => {
+  const handleDownloadPDF = async () => {
     if (!inmueble) return
     setDownloading(true)
     try {
-      const blob = await pdf(<FichaPDF inmueble={inmueble} />).toBlob()
+      const blob = await pdf(<FichaPDF inmueble={inmueble} parametros={parametros} />).toBlob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `cedula_catastral_${inmueble.codigo_catastral}.pdf`
       a.click()
-      URL.revokeObjectURL(url)
-    } catch {
-      // ignore
+    } catch (error) {
+      console.error('Error generating PDF', error)
+      alert('Error generando la ficha en PDF.')
     } finally {
       setDownloading(false)
     }
@@ -70,21 +76,37 @@ export default function FichaCatastral() {
     if (!inmueble) return
     setDownloadingPlano(true)
     try {
-      // Fetch ALL properties to draw neighboring context
+      // 1. Obtener todos los inmuebles para buscar colindancias
       const allInmuebles = await api.getInmuebles()
-      const vecinos = allInmuebles.filter(i => i.id !== inmueble.id)
-      // Enrich with propietario data
-      const vecinosEnriquecidos: Inmueble[] = []
-      for (const v of vecinos) {
+      
+      // 2. FILTRO INTELIGENTE CON TURF.JS: Detectar qué predios tocan realmente el nuestro
+      const vecinosReales: Inmueble[] = []
+      const mainFeature = turf.feature(inmueble.geom)
+      
+      for (const v of allInmuebles) {
+        if (v.id === inmueble.id || !v.geom) continue
         try {
-          const vFull = await api.getInmueble(v.id)
-          vecinosEnriquecidos.push(vFull)
-        } catch(e) {
-          vecinosEnriquecidos.push(v)
+          const vecinoFeature = turf.feature(v.geom)
+          // booleanIntersects devuelve true si los polígonos se tocan o se cruzan
+          if (turf.booleanIntersects(mainFeature, vecinoFeature)) {
+            // 3. Enriquecer SOLAMENTE a los vecinos reales con datos de propietarios
+            try {
+              const vFull = await api.getInmueble(v.id)
+              vecinosReales.push(vFull)
+            } catch(e) {
+              vecinosReales.push(v) // Si falla el fetch, usamos el dato básico
+            }
+          }
+        } catch (e) {
+          console.error('Error verificando intersección', e)
         }
       }
 
-      const blob = await pdf(<PlanoCartograficoPDF inmueble={inmueble} vecinos={vecinosEnriquecidos} />).toBlob()
+      // 4. Generar el PDF con el polígono principal y sus vecinos reales
+      const blob = await pdf(
+        <PlanoCartograficoPDF inmueble={inmueble} vecinos={vecinosReales} />
+      ).toBlob()
+      
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -160,7 +182,7 @@ export default function FichaCatastral() {
             <Download className="w-4 h-4" /> {downloadingPlano ? 'Generando...' : 'Plano Topográfico'}
           </button>
           <button
-            onClick={handleDownload}
+            onClick={handleDownloadPDF}
             disabled={downloading}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-institutional-navy hover:bg-[#152c6b] text-white px-3 md:px-4 py-2.5 rounded-lg text-sm font-semibold transition disabled:opacity-50 shadow-sm whitespace-nowrap"
           >

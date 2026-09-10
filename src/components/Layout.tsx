@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { Map, Home, BarChart3, LogOut, Wifi, WifiOff, CloudUpload, Scissors, User as UserIcon, ShieldAlert, Users, UserCog } from 'lucide-react'
+import { Map, Home, BarChart3, LogOut, Wifi, WifiOff, CloudUpload, Scissors, User as UserIcon, ShieldAlert, Users, UserCog, Calculator } from 'lucide-react'
 import { useOnlineStatus } from '@/hooks/useOnline'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -79,6 +79,7 @@ export default function Layout() {
     ...(isPrivileged ? [{ to: '/operaciones', icon: Scissors, label: 'Actualización de Parcelas', mobileLabel: 'Parcelas' }] : []),
     ...(isPrivileged ? [{ to: '/propietarios', icon: Users, label: 'Directorio de Propietarios', mobileLabel: 'Propietarios' }] : []),
     ...(userProfile?.rol === 'administrador' ? [{ to: '/usuarios', icon: UserCog, label: 'Gestión de Usuarios', mobileLabel: 'Usuarios' }] : []),
+    ...(userProfile?.rol === 'administrador' ? [{ to: '/avaluos', icon: Calculator, label: 'Avalúos y Tasas', mobileLabel: 'Avalúos' }] : []),
   ]
 
   const desktopLinkClass = ({ isActive }: { isActive: boolean }) =>

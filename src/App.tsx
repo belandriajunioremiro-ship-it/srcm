@@ -8,6 +8,7 @@ import RegistrarInmueble from '@/pages/RegistrarInmueble'
 import FichaCatastral from '@/pages/FichaCatastral'
 import Estadisticas from '@/pages/Estadisticas'
 import OperacionesEspaciales from '@/pages/OperacionesEspaciales'
+import AvaluosConfig from '@/pages/AvaluosConfig'
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -82,6 +83,7 @@ export default function App() {
             <Route path="/ficha/:id" element={<FichaCatastral />} />
             <Route path="/estadisticas" element={<Estadisticas />} />
             <Route path="/operaciones" element={<OperacionesEspaciales />} />
+            <Route path="/avaluos" element={<AvaluosConfig />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

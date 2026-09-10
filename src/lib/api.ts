@@ -19,6 +19,27 @@ export const api = {
     return data as Propietario
   },
 
+  // === PARÁMETROS CATASTRALES ===
+  async getParametros() {
+    const { data, error } = await supabase.from('parametros_catastrales').select('*').single()
+    if (error && error.code !== 'PGRST116') throw error // PGRST116 es not found
+    return data
+  },
+  async saveParametros(parametros: any) {
+    const { data: existing } = await supabase.from('parametros_catastrales').select('id').single()
+    
+    let error;
+    if (existing) {
+      const { error: err } = await supabase.from('parametros_catastrales').update(parametros).eq('id', existing.id)
+      error = err
+    } else {
+      const { error: err } = await supabase.from('parametros_catastrales').insert(parametros)
+      error = err
+    }
+    if (error) throw error
+    return true
+  },
+
   // === INMUEBLES ===
   async generarCodigoCatastral(zona = '01', barrio = '00') {
     const { data, error } = await supabase.rpc('generar_codigo_catastral', {
