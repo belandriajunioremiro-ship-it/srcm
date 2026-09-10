@@ -120,6 +120,10 @@ export default function RegistrarInmueble() {
       setValue('sur', linderos.sur)
       setValue('este', linderos.este)
       setValue('oeste', linderos.oeste)
+      
+      // Auto-completar la superficie declarada con el Área GIS
+      const areaGis = superficieM2Preview(geom)
+      setValue('superficie_m2', Number(areaGis.toFixed(2)), { shouldValidate: true })
     }
   }, [geom, autoLinderos, setValue])
 

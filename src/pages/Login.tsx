@@ -82,14 +82,14 @@ export default function Login() {
   return (
     <div className="min-h-screen flex w-full">
       {/* Lado Izquierdo: Imagen (Oculta en móviles muy pequeños) */}
-      <div className="hidden lg:flex w-1/2 relative bg-institutional-navy">
-        <div 
-          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: 'url("/assets/images/gmaps.png")' }}
-        >
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-        </div>
-        <div className="relative z-10 p-12 flex flex-col h-full text-white w-full bg-gradient-to-r from-black/80 to-transparent">
+      <div className="hidden md:flex w-1/2 bg-institutional-navy relative overflow-hidden items-center justify-center">
+        <div className="absolute inset-0 bg-black/20 z-10" />
+        <img 
+          src="/assets/images/imagenlogin.png" 
+          alt="Mapa Catastral" 
+          className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay"
+        />
+        <div className="relative z-20 p-12 flex flex-col h-full text-white w-full bg-gradient-to-r from-black/80 to-transparent">
           {/* Logo anclado arriba */}
           <div>
             <img src="/assets/logos/logo.png" alt="Logo" className="w-16 h-auto brightness-0 invert opacity-90" />
