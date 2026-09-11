@@ -5,11 +5,11 @@ import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/render
    CÉDULA CATASTRAL · DISEÑO DE ALTA GAMA TIPO CERTIFICADO OFICIAL
    ══════════════════════════════════════════════════════════════════════════ */
 
-const NAVY = '#0F172A';     // Slate 900 - Azul muy oscuro, muy elegante
-const INK  = '#1E293B';     // Slate 800 - Texto principal
-const GRAY = '#475569';     // Slate 600 - Etiquetas
-const SOFT = '#F1F5F9';     // Slate 100 - Fondos suaves
-const BORDER = '#CBD5E1';   // Slate 300 - Bordes sutiles
+const NAVY = '#000000';     // Negro Puro - Titulos y bordes
+const INK  = '#1A1A1A';     // Casi Negro - Texto principal
+const GRAY = '#555555';     // Gris Oscuro - Etiquetas
+const SOFT = '#F0F0F0';     // Gris Claro - Fondos suaves
+const BORDER = '#999999';   // Gris Medio - Bordes sutiles
 
 const OFICIO: [number, number] = [612, 936]; // Oficio venezolano
 
@@ -81,7 +81,7 @@ const s = StyleSheet.create({
   vTotalBox: { flexDirection: 'row', backgroundColor: NAVY, padding: 6 },
   vtLabel: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: '#FFFFFF' },
   vtVal: { fontSize: 10, fontFamily: 'Helvetica-Bold', color: '#FFFFFF' },
-  alicuotaBox: { flexDirection: 'row', justifyContent: 'space-between', padding: 5, backgroundColor: '#F8FAFC' },
+  alicuotaBox: { flexDirection: 'row', justifyContent: 'space-between', padding: 5, backgroundColor: '#EAEAEA' },
   alicTxt: { fontSize: 7, color: GRAY },
   alicVal: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: NAVY },
 
