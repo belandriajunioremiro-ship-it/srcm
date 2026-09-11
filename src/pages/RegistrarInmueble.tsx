@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase'
 import { useOnlineStatus } from '@/hooks/useOnline'
 import { useGeolocation } from '@/hooks/useGeolocation'
 import { superficieM2Preview, perimetroMPreview, calcularLinderos, centroide, formatCoord, formatDMS, getVertices, resumenVertices } from '@/lib/geo'
-import { reverseGeocode, getCallesAdyacentes, getBBox } from '@/lib/nominatim'
+import { reverseGeocode, getCallesAdyacentes, getBBox } from '../lib/geocoding'
 import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import Textarea from '@/components/ui/Textarea'
@@ -451,7 +451,7 @@ export default function RegistrarInmueble() {
                 <Input label="Dirección *" icon={<MapPin size={18} />} placeholder="Av. Principal" {...register('direccion')} />
               </div>
               <div>
-                <Input label="Barrio" icon={<Map size={18} />} placeholder="Centro" {...register('barrio')} />
+                <Input label="Urbanización / Sector" icon={<Map size={18} />} placeholder="Urb. Los Naranjos" {...register('barrio')} />
               </div>
               <div>
                 <Input label="Zona" icon={<MapPinned size={18} />} placeholder="Norte" {...register('zona')} />

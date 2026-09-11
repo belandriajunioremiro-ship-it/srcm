@@ -59,15 +59,28 @@ function projectAllToSvg(mainGeom: GeoJSON.Polygon, vecinos: Inmueble[] | undefi
     y: offY + (pMaxLat - lat) * scale,
   })
   
-  return { project, bounds: { minLon: pMinLon, maxLon: pMaxLon, minLat: pMinLat, maxLat: pMaxLat, scale } }
+  const actualMinLon = pMinLon - (offX / scale)
+  const actualMaxLon = pMaxLon + (offX / scale)
+  const actualMinLat = pMinLat - (offY / scale)
+  const actualMaxLat = pMaxLat + (offY / scale)
+
+  return { 
+    project, 
+    bounds: { minLon: pMinLon, maxLon: pMaxLon, minLat: pMinLat, maxLat: pMaxLat, scale },
+    actualBBox: { minLon: actualMinLon, maxLon: actualMaxLon, minLat: actualMinLat, maxLat: actualMaxLat }
+  }
 }
 
 export default function PlanoCartograficoPDF({ inmueble, vecinos = [] }: Props) {
   const dateStr = new Date().toLocaleDateString('es-VE')
   const svgW = 450, svgH = 350
 
-  const { project, bounds } = projectAllToSvg(inmueble.geom, vecinos, svgW, svgH)
+  const { project, bounds, actualBBox } = projectAllToSvg(inmueble.geom, vecinos, svgW, svgH)
   
+  // URL para el mapa base satelital gratuito (ArcGIS World Imagery)
+  // Solicita la imagen exacta del Bounding Box que renderiza el SVG para alinear perfectamente
+  const mapUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${actualBBox.minLon},${actualBBox.minLat},${actualBBox.maxLon},${actualBBox.maxLat}&bboxSR=4326&imageSR=4326&size=${svgW},${svgH}&format=jpg&f=image`
+
   const mainPolyStr = inmueble.geom.coordinates[0].map(c => {
     const p = project(c[0], c[1])
     return `${p.x},${p.y}`
@@ -99,12 +112,12 @@ export default function PlanoCartograficoPDF({ inmueble, vecinos = [] }: Props) 
 
   // Generar Cuadrícula (Grid) estilo CAD - Muy suave y limpia
   const gridLines = []
-  const gridStep = 20 // Cuadrícula más grande y limpia
+  const gridStep = 20
   for (let x = 0; x <= svgW; x += gridStep) {
-    gridLines.push(<Line key={`gx-${x}`} x1={x} y1={0} x2={x} y2={svgH} stroke="#f5f5f5" strokeWidth={0.5} />)
+    gridLines.push(<Line key={`gx-${x}`} x1={x} y1={0} x2={x} y2={svgH} stroke="rgba(255, 255, 255, 0.3)" strokeWidth={0.5} />)
   }
   for (let y = 0; y <= svgH; y += gridStep) {
-    gridLines.push(<Line key={`gy-${y}`} x1={0} y1={y} x2={svgW} y2={y} stroke="#f5f5f5" strokeWidth={0.5} />)
+    gridLines.push(<Line key={`gy-${y}`} x1={0} y1={y} x2={svgW} y2={y} stroke="rgba(255, 255, 255, 0.3)" strokeWidth={0.5} />)
   }
 
   return (
@@ -141,8 +154,11 @@ export default function PlanoCartograficoPDF({ inmueble, vecinos = [] }: Props) 
             </View>
 
             {/* Lienzo SVG Principal */}
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 10 }}>
-              <Svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} style={{ border: '1pt solid #ddd', backgroundColor: '#ffffff' }}>
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 10, position: 'relative' }}>
+              {/* CAPA BASE: Imagen satelital real */}
+              <Image src={mapUrl} style={{ position: 'absolute', top: 10, left: 10, width: svgW, height: svgH }} />
+              
+              <Svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} style={{ border: '1pt solid #1A1A1A' }}>
                 
                 {/* 1. Cuadrícula de fondo suave */}
                 {gridLines}
@@ -154,11 +170,11 @@ export default function PlanoCartograficoPDF({ inmueble, vecinos = [] }: Props) 
                     const p = project(c[0], c[1])
                     return `${p.x},${p.y}`
                   }).join(' ')
-                  return <Polygon key={`vec-${i}`} points={vStr} fill="#f9f9f9" stroke="#cccccc" strokeWidth={0.8} strokeDasharray="2,2" />
+                  return <Polygon key={`vec-${i}`} points={vStr} fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.8)" strokeWidth={0.8} strokeDasharray="2,2" />
                 })}
 
-                {/* 3. Polígono Principal - SIN RELLENO NARANJA, borde negro grueso */}
-                <Polygon points={mainPolyStr} fill="rgba(30, 58, 138, 0.03)" stroke="#1A1A1A" strokeWidth={2} />
+                {/* 3. Polígono Principal - Estilo Profesional: Borde celeste vibrante, relleno muy transparente */}
+                <Polygon points={mainPolyStr} fill="rgba(56, 189, 248, 0.15)" stroke="#38bdf8" strokeWidth={2.5} />
 
                 {/* 4. Etiquetas de distancias (con fondo blanco para no chocar con el grid) */}
                 {edges.map((e, i) => (
