@@ -75,9 +75,9 @@ function projectAllToSvg(mainGeom: GeoJSON.Polygon, vecinos: Inmueble[] | undefi
 
 // Proyectar el polígono de Torbes como marca de agua a tamaño completo del canvas
 function getTorbesWatermark(svgW: number, svgH: number) {
-  if (!torbesPolygon || !torbesPolygon.value) return ''
-  const lons = torbesPolygon.value.map((c: any) => c[0])
-  const lats = torbesPolygon.value.map((c: any) => c[1])
+  if (!torbesPolygon || !torbesPolygon[0]) return ''
+  const lons = torbesPolygon[0].map((c: any) => c[0])
+  const lats = torbesPolygon[0].map((c: any) => c[1])
   const minLon = Math.min(...lons), maxLon = Math.max(...lons)
   const minLat = Math.min(...lats), maxLat = Math.max(...lats)
   
@@ -87,7 +87,7 @@ function getTorbesWatermark(svgW: number, svgH: number) {
   const offX = (svgW - lonR * scale) / 2
   const offY = (svgH - latR * scale) / 2
   
-  return torbesPolygon.value.map((c: any) => {
+  return torbesPolygon[0].map((c: any) => {
     const x = offX + (c[0] - minLon) * scale
     const y = offY + (maxLat - c[1]) * scale
     return `${x},${y}`
