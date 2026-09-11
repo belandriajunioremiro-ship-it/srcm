@@ -75,7 +75,7 @@ function projectAllToSvg(mainGeom: GeoJSON.Polygon, vecinos: Inmueble[] | undefi
 
 // Proyectar el polígono de Torbes como marca de agua a tamaño completo del canvas
 function getTorbesWatermark(svgW: number, svgH: number) {
-  if (!torbesPolygon || !torbesPolygon[0]) return ''
+  if (!torbesPolygon || !torbesPolygon[0]) return { points: '', project: null }
   const lons = torbesPolygon[0].map((c: any) => c[0])
   const lats = torbesPolygon[0].map((c: any) => c[1])
   const minLon = Math.min(...lons), maxLon = Math.max(...lons)
@@ -83,15 +83,21 @@ function getTorbesWatermark(svgW: number, svgH: number) {
   
   const lonR = maxLon - minLon
   const latR = maxLat - minLat
-  const scale = Math.min(svgW / lonR, svgH / latR) * 0.9 // 90% del tamaño
+  const scale = Math.min(svgW / lonR, svgH / latR) * 0.7 // 70% del tamaño para dar margen
   const offX = (svgW - lonR * scale) / 2
   const offY = (svgH - latR * scale) / 2
   
-  return torbesPolygon[0].map((c: any) => {
-    const x = offX + (c[0] - minLon) * scale
-    const y = offY + (maxLat - c[1]) * scale
-    return `${x},${y}`
+  const project = (lon: number, lat: number) => ({
+    x: offX + (lon - minLon) * scale,
+    y: offY + (maxLat - lat) * scale
+  })
+
+  const points = torbesPolygon[0].map((c: any) => {
+    const p = project(c[0], c[1])
+    return `${p.x},${p.y}`
   }).join(' ')
+
+  return { points, project }
 }
 
 export default function PlanoCartograficoPDF({ inmueble, vecinos = [] }: Props) {
@@ -101,8 +107,6 @@ export default function PlanoCartograficoPDF({ inmueble, vecinos = [] }: Props) 
   const { project, bounds, actualBBox } = projectAllToSvg(inmueble.geom, vecinos, svgW, svgH)
   const torbesWatermark = getTorbesWatermark(svgW, svgH)
   
-  const mapUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${actualBBox.minLon},${actualBBox.minLat},${actualBBox.maxLon},${actualBBox.maxLat}&bboxSR=4326&imageSR=4326&size=${svgW},${svgH}&format=jpg&f=image`
-
   const mainPolyStr = inmueble.geom.coordinates[0].map(c => {
     const p = project(c[0], c[1])
     return `${p.x},${p.y}`
@@ -114,6 +118,9 @@ export default function PlanoCartograficoPDF({ inmueble, vecinos = [] }: Props) 
   const area = inmueble.superficie_gis_m2 ?? inmueble.superficie_m2 ?? 0
   const [cLat, cLon] = centroide(inmueble.geom)
   const centerPt = project(cLon, cLat)
+  
+  // Punto rojo de ubicación del inmueble dentro del mapa de Torbes
+  const dotPt = torbesWatermark.project ? torbesWatermark.project(cLon, cLat) : null
 
   const colindantes = [inmueble.norte ?? '', inmueble.este ?? '', inmueble.sur ?? '', inmueble.oeste ?? '']
   const edges: any[] = []
@@ -167,34 +174,40 @@ export default function PlanoCartograficoPDF({ inmueble, vecinos = [] }: Props) 
 
             {/* Lienzo SVG Principal */}
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 10, position: 'relative' }}>
-              {/* CAPA BASE: Imagen satelital real */}
-              <Image src={mapUrl} style={{ position: 'absolute', top: 10, left: 10, width: svgW, height: svgH }} />
               
-              <Svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} style={{ border: '1pt solid #1A1A1A' }}>
+              <Svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`}>
                 
                 {/* 1. MARCA DE AGUA: Municipio Torbes */}
-                {torbesWatermark && (
-                  <Polygon points={torbesWatermark} fill="rgba(255,255,255,0.4)" stroke="rgba(255,255,255,0.8)" strokeWidth={2} />
+                {torbesWatermark.points && (
+                  <Polygon points={torbesWatermark.points} fill="#eaeaea" />
                 )}
 
-                {/* 2. VECINOS (Contexto de manzanas) en gris claro con línea punteada */}
+                {/* 2. PUNTO ROJO: Ubicación de la propiedad */}
+                {dotPt && (
+                  <Circle cx={dotPt.x} cy={dotPt.y} r={3.5} fill="#ef4444" opacity={0.8} />
+                )}
+
+                {/* 3. VECINOS (Contexto de manzanas) en gris claro con línea punteada */}
                 {vecinos.map((vecino, i) => {
                   if (!vecino.geom) return null
                   const vStr = vecino.geom.coordinates[0].map(c => {
                     const p = project(c[0], c[1])
                     return `${p.x},${p.y}`
                   }).join(' ')
-                  return <Polygon key={`vec-${i}`} points={vStr} fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.8)" strokeWidth={0.8} strokeDasharray="2,2" />
+                  return <Polygon key={`vec-${i}`} points={vStr} fill="rgba(200,200,200,0.1)" stroke="#999" strokeWidth={0.5} strokeDasharray="2,2" />
                 })}
 
-                {/* 3. Polígono Principal - Estilo Profesional: Borde celeste vibrante, relleno muy transparente */}
-                <Polygon points={mainPolyStr} fill="rgba(56, 189, 248, 0.15)" stroke="#38bdf8" strokeWidth={2.5} />
+                {/* 3. Polígono Principal - Estilo Técnico: Borde negro, sin relleno */}
+                <Polygon points={mainPolyStr} fill="none" stroke="#000" strokeWidth={1.5} />
 
                 {/* 4. Etiquetas de distancias */}
                 {edges.map((e, i) => (
                   <G key={`dist-${i}`} transform={`translate(${e.midX}, ${e.midY}) rotate(${e.angle})`}>
-                    <Rect x={-18} y={-6} width={36} height={9} fill="white" />
-                    <Text x={0} y={1} fontSize={6} textAnchor="middle" fill="#1A1A1A" fontWeight="bold">{e.dist} m</Text>
+                    <Rect x={-15} y={-4} width={30} height={8} fill="white" />
+                    <Text x={0} y={2} fontSize={5} textAnchor="middle" fill="#000" fontWeight="bold">{e.dist} m</Text>
+                    {/* Ticks en la línea para apariencia más técnica */}
+                    <Line x1={-18} y1={-2} x2={-18} y2={2} stroke="#000" strokeWidth={0.5} />
+                    <Line x1={18} y1={-2} x2={18} y2={2} stroke="#000" strokeWidth={0.5} />
                   </G>
                 ))}
 
@@ -203,37 +216,35 @@ export default function PlanoCartograficoPDF({ inmueble, vecinos = [] }: Props) 
                   if (!e.colindante) return null
                   const dx = e.p2.x - e.p1.x, dy = e.p2.y - e.p1.y
                   const len = Math.sqrt(dx * dx + dy * dy)
-                  const nx = -dy / len * 18, ny = dx / len * 18
+                  const nx = -dy / len * 12, ny = dx / len * 12
                   return (
                     <G key={`col-${i}`} transform={`translate(${e.midX + nx}, ${e.midY + ny}) rotate(${e.angle})`}>
-                      <Text x={0} y={0} fontSize={6.5} textAnchor="middle" fill="#333333" fontWeight="bold">
+                      <Text x={0} y={2} fontSize={5} textAnchor="middle" fill="#555">
                         {e.colindante.toUpperCase()}
                       </Text>
                     </G>
                   )
                 })}
 
-                {/* 6. Vértices tipo CAD (Cruces negras) */}
+                {/* 6. Vértices tipo CAD */}
                 {vertices.map((v, i) => {
                   const pt = project(v.lon, v.lat)
                   return (
                     <G key={`v-${i}`}>
-                      <Line x1={pt.x - 4} y1={pt.y} x2={pt.x + 4} y2={pt.y} stroke="#1A1A1A" strokeWidth={1} />
-                      <Line x1={pt.x} y1={pt.y - 4} x2={pt.x} y2={pt.y + 4} stroke="#1A1A1A" strokeWidth={1} />
-                      <Circle cx={pt.x} cy={pt.y} r={1.5} fill="#1A1A1A" />
-                      <Text x={pt.x + 6} y={pt.y - 6} fontSize={6} fill="#1A1A1A" fontWeight="bold">E-{i + 1}</Text>
+                      <Circle cx={pt.x} cy={pt.y} r={1.5} fill="#fff" stroke="#000" strokeWidth={0.5} />
+                      <Text x={pt.x + 3} y={pt.y - 3} fontSize={5} fill="#000" fontWeight="bold">E-{i + 1}</Text>
                     </G>
                   )
                 })}
 
-                {/* 7. Texto Central (Azul Institucional) */}
-                <Text x={centerPt.x} y={centerPt.y - 10} fontSize={9} textAnchor="middle" fill="#1E3A8A" fontWeight="bold">
+                {/* 7. Texto Central */}
+                <Text x={centerPt.x} y={centerPt.y - 8} fontSize={8} textAnchor="middle" fill="#000" fontWeight="bold">
                   {inmueble.tipo_inmueble.toUpperCase()}
                 </Text>
-                <Text x={centerPt.x} y={centerPt.y + 2} fontSize={8} textAnchor="middle" fill="#1A1A1A">
+                <Text x={centerPt.x} y={centerPt.y} fontSize={7} textAnchor="middle" fill="#000">
                   {area.toFixed(2)} m²
                 </Text>
-                <Text x={centerPt.x} y={centerPt.y + 14} fontSize={6} textAnchor="middle" fill="#555555">
+                <Text x={centerPt.x} y={centerPt.y + 8} fontSize={5} textAnchor="middle" fill="#555">
                   {inmueble.codigo_catastral}
                 </Text>
 
