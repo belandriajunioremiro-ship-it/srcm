@@ -91,24 +91,12 @@ export default function Login() {
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent" />
         </div>
         <div className="relative z-10 p-12 flex flex-col h-full text-white w-full">
-          {/* Logo anclado arriba */}
-          <div>
+          {/* Logo y título anclado arriba */}
+          <div className="flex items-center gap-4">
             <img src="/assets/logos/logo.png" alt="Logo" className="w-16 h-auto brightness-0 invert opacity-90" />
-          </div>
-
-          {/* Contenedor flexible para centrar el bloque principal de texto */}
-          <div className="flex-1 flex flex-col justify-center">
-            <h1 className="text-4xl font-bold tracking-tight max-w-lg leading-tight">
+            <h1 className="text-xl font-bold tracking-tight opacity-90">
               Sistema de Registro Catastral Municipal
             </h1>
-            <p className="mt-4 text-lg text-gray-300 max-w-md leading-relaxed">
-              Plataforma oficial para la organización territorial, el registro de propiedades y el desarrollo urbano del Municipio Torbes.
-            </p>
-          </div>
-
-          {/* Footer del lado izquierdo */}
-          <div className="text-sm text-gray-400 mt-8">
-            &copy; {new Date().getFullYear()} Alcaldía del Municipio Torbes. Todos los derechos reservados.
           </div>
         </div>
       </div>
