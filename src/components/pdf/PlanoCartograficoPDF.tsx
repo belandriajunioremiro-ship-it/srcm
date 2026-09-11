@@ -2,6 +2,8 @@ import { Document, Page, Text, View, StyleSheet, Svg, Polygon, Circle, Line, G, 
 import type { Inmueble } from '@/types'
 import { getVertices, resumenVertices, toUTM, toRumboTopografico, toDMS, centroide } from '@/lib/geo'
 
+import { torbesPolygon } from '@/lib/torbes'
+
 const s = StyleSheet.create({
   page: { padding: 15, backgroundColor: '#fff', fontFamily: 'Helvetica' },
   outerBorder: { border: '2pt solid #000', flex: 1, flexDirection: 'row' },
@@ -71,14 +73,34 @@ function projectAllToSvg(mainGeom: GeoJSON.Polygon, vecinos: Inmueble[] | undefi
   }
 }
 
+// Proyectar el polígono de Torbes como marca de agua a tamaño completo del canvas
+function getTorbesWatermark(svgW: number, svgH: number) {
+  if (!torbesPolygon || !torbesPolygon.value) return ''
+  const lons = torbesPolygon.value.map((c: any) => c[0])
+  const lats = torbesPolygon.value.map((c: any) => c[1])
+  const minLon = Math.min(...lons), maxLon = Math.max(...lons)
+  const minLat = Math.min(...lats), maxLat = Math.max(...lats)
+  
+  const lonR = maxLon - minLon
+  const latR = maxLat - minLat
+  const scale = Math.min(svgW / lonR, svgH / latR) * 0.9 // 90% del tamaño
+  const offX = (svgW - lonR * scale) / 2
+  const offY = (svgH - latR * scale) / 2
+  
+  return torbesPolygon.value.map((c: any) => {
+    const x = offX + (c[0] - minLon) * scale
+    const y = offY + (maxLat - c[1]) * scale
+    return `${x},${y}`
+  }).join(' ')
+}
+
 export default function PlanoCartograficoPDF({ inmueble, vecinos = [] }: Props) {
   const dateStr = new Date().toLocaleDateString('es-VE')
   const svgW = 450, svgH = 350
 
   const { project, bounds, actualBBox } = projectAllToSvg(inmueble.geom, vecinos, svgW, svgH)
+  const torbesWatermark = getTorbesWatermark(svgW, svgH)
   
-  // URL para el mapa base satelital gratuito (ArcGIS World Imagery)
-  // Solicita la imagen exacta del Bounding Box que renderiza el SVG para alinear perfectamente
   const mapUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${actualBBox.minLon},${actualBBox.minLat},${actualBBox.maxLon},${actualBBox.maxLat}&bboxSR=4326&imageSR=4326&size=${svgW},${svgH}&format=jpg&f=image`
 
   const mainPolyStr = inmueble.geom.coordinates[0].map(c => {
@@ -108,16 +130,6 @@ export default function PlanoCartograficoPDF({ inmueble, vecinos = [] }: Props) 
       angle, dist: r.distancia.toFixed(2), rumbo: toRumboTopografico(r.azimut),
       colindante: colindantes[i % colindantes.length],
     })
-  }
-
-  // Generar Cuadrícula (Grid) estilo CAD - Muy suave y limpia
-  const gridLines = []
-  const gridStep = 20
-  for (let x = 0; x <= svgW; x += gridStep) {
-    gridLines.push(<Line key={`gx-${x}`} x1={x} y1={0} x2={x} y2={svgH} stroke="rgba(255, 255, 255, 0.3)" strokeWidth={0.5} />)
-  }
-  for (let y = 0; y <= svgH; y += gridStep) {
-    gridLines.push(<Line key={`gy-${y}`} x1={0} y1={y} x2={svgW} y2={y} stroke="rgba(255, 255, 255, 0.3)" strokeWidth={0.5} />)
   }
 
   return (
@@ -160,8 +172,10 @@ export default function PlanoCartograficoPDF({ inmueble, vecinos = [] }: Props) 
               
               <Svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} style={{ border: '1pt solid #1A1A1A' }}>
                 
-                {/* 1. Cuadrícula de fondo suave */}
-                {gridLines}
+                {/* 1. MARCA DE AGUA: Municipio Torbes */}
+                {torbesWatermark && (
+                  <Polygon points={torbesWatermark} fill="rgba(255,255,255,0.4)" stroke="rgba(255,255,255,0.8)" strokeWidth={2} />
+                )}
 
                 {/* 2. VECINOS (Contexto de manzanas) en gris claro con línea punteada */}
                 {vecinos.map((vecino, i) => {
@@ -176,7 +190,7 @@ export default function PlanoCartograficoPDF({ inmueble, vecinos = [] }: Props) 
                 {/* 3. Polígono Principal - Estilo Profesional: Borde celeste vibrante, relleno muy transparente */}
                 <Polygon points={mainPolyStr} fill="rgba(56, 189, 248, 0.15)" stroke="#38bdf8" strokeWidth={2.5} />
 
-                {/* 4. Etiquetas de distancias (con fondo blanco para no chocar con el grid) */}
+                {/* 4. Etiquetas de distancias */}
                 {edges.map((e, i) => (
                   <G key={`dist-${i}`} transform={`translate(${e.midX}, ${e.midY}) rotate(${e.angle})`}>
                     <Rect x={-18} y={-6} width={36} height={9} fill="white" />
